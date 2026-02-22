@@ -3,10 +3,10 @@ const cors = require("cors");
 const axios = require("axios");
 const { CookieJar } = require("tough-cookie");
 const { wrapper } = require("axios-cookiejar-support");
-
+const path = require("path");
 const app = express();
 app.use(cors());
-
+app.use(express.static(path.join(__dirname, "public")));
 
 const jar = new CookieJar();
 
@@ -220,6 +220,9 @@ function toNum(v) {
     return NaN;
 }
 
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 app.get("/schedule", async (req, res) => {
     try {

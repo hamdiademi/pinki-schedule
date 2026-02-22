@@ -525,7 +525,7 @@
 
         async function fetchJson() {
 
-            const response = await fetch("http://localhost:3000/schedule?year=2025");
+            const response = await fetch("/schedule");
             const json = await response.json();
 
             days = json.days;
