@@ -5,7 +5,7 @@ const { CookieJar } = require("tough-cookie");
 const { wrapper } = require("axios-cookiejar-support");
 
 const app = express();
-app.use(cors({ origin: true }));
+app.use(cors());
 
 
 const jar = new CookieJar();
@@ -258,6 +258,8 @@ app.get("/debug/regulartt", async (req, res) => {
     res.json(await fetchRegularTTData(tt));
 });
 
-app.listen(3000, () => {
-    console.log("✅ Backend running: http://localhost:3000/schedule?year=2025");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`✅ Backend running on port ${PORT}`);
 });
