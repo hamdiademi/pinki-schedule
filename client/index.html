@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>PINKI Schedule</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --surface2: #f8f9fb;
+            --grid: #e2e6ec;
+            --accent: #2d2d8e;
+            --accent2: #29abe2;
+            --accent-light: rgba(41, 171, 226, .12);
+            --text: #1a1a2e;
+            --text-muted: #6b7280;
+
+            --time-col: 140px;
+            --header-h: 56px;
+            --slot-h: 90px;
+            --pad: 24px;
+            --day-min-col: 220px;
+            --radius: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            padding: var(--pad);
+            background: var(--bg);
+            font-family: "Inter", sans-serif;
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .page-header img {
+            height: 48px;
+            width: auto;
+        }
+
+        .page-title {
+            font-size: clamp(20px, 3vw, 30px);
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .page-title span {
+            color: var(--accent2);
+        }
+
+
+        .controls-card {
+            background: var(--surface);
+            border: 1px solid var(--grid);
+            border-radius: 14px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .07);
+            margin-bottom: 18px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .ctrl-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 140px;
+        }
+
+        .ctrl-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .8px;
+        }
+
+        .controls select {
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--grid);
+            background: var(--surface2);
+            color: var(--text);
+            font-family: "Inter", sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            transition: border-color .2s;
+        }
+
+        .controls select:focus,
+        .controls select:hover {
+            border-color: var(--accent2);
+        }
+
+
+        .ms {
+            position: relative;
+        }
+
+        .ms-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--grid);
+            background: var(--surface2);
+            color: var(--text);
+            font-family: "Inter", sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            min-width: 120px;
+            justify-content: space-between;
+            transition: border-color .2s;
+        }
+
+        .ms-btn:hover,
+        .ms.open .ms-btn {
+            border-color: var(--accent2);
+        }
+
+        .ms-arrow {
+            font-size: 10px;
+            transition: transform .15s;
+            display: inline-block;
+            color: var(--text-muted);
+        }
+
+        .ms.open .ms-arrow {
+            transform: rotate(180deg);
+        }
+
+        .ms-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            background: var(--surface);
+            border: 1px solid var(--grid);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+            z-index: 200;
+            min-width: 170px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+
+        .ms.open .ms-dropdown {
+            display: block;
+        }
+
+        .ms-shortcut-item {
+            font-weight: 700;
+            color: var(--accent2) !important;
+            border-bottom: none;
+        }
+
+        .ms-shortcut-item input[type=checkbox] {
+            accent-color: var(--accent2);
+        }
+
+        .ms-divider {
+            border-bottom: 1px solid var(--grid);
+            margin: 2px 0 4px;
+        }
+
+        .ms-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background .1s;
+            user-select: none;
+            color: var(--text);
+        }
+
+        .ms-item:hover {
+            background: var(--accent-light);
+        }
+
+        .ms-item input[type=checkbox] {
+            accent-color: var(--accent2);
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        /* ── Grid wrapper ── */
+        .grid-wrap {
+            width: 100%;
+            overflow-x: auto;
+            background: var(--surface);
+            border-radius: 14px;
+            border: 1px solid var(--grid);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .07);
+        }
+
+        .grid {
+            width: max(100%, calc(var(--time-col) + 5 * var(--day-min-col)));
+            display: grid;
+            grid-template-columns: var(--time-col) repeat(5, minmax(var(--day-min-col), 1fr));
+            grid-auto-rows: var(--slot-h);
+        }
+
+        /* generic cell */
+        .item,
+        .empty-item,
+        .dummy-item,
+        .time-item {
+            border-right: 1px solid var(--grid);
+            border-bottom: 1px solid var(--grid);
+            width: 100%;
+            height: 100%;
+            padding: 2px;
+            background: var(--surface);
+        }
+
+        /* corner */
+        .time-item.corner {
+            background: var(--surface2);
+            position: sticky;
+            top: 0;
+            left: 0;
+            z-index: 5;
+        }
+
+        /* day headers */
+        .item.header {
+            background: var(--surface2);
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 4;
+        }
+
+        /* time column */
+        .time-item {
+            background: var(--surface2);
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            left: 0;
+            z-index: 3;
+        }
+
+        /* empty slots */
+        .empty-item {
+            background: repeating-linear-gradient(45deg,
+                    var(--surface) 0,
+                    var(--surface) 10px,
+                    rgba(0, 0, 0, .025) 10px,
+                    rgba(0, 0, 0, .025) 11px);
+        }
+
+        /* lesson slot holder */
+        .dummy-item {
+            display: flex;
+            gap: 6px;
+            padding: 6px;
+            background: var(--surface);
+        }
+
+        /* each lesson card */
+        .sub-item {
+            flex: 1;
+            min-width: 0;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+            padding: 7px 9px;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            transition: transform .15s, box-shadow .15s;
+        }
+
+        .sub-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .2);
+        }
+
+        .small {
+            font-size: 11px;
+            line-height: 1.3;
+            color: rgba(255, 255, 255, .95);
+            white-space: normal;
+            overflow: visible;
+            word-break: break-word;
+        }
+
+        .sub-item .top-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .sub-item h2.name {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-header">
+        <img src="logo.png" alt="Logo">
+        <h1 class="page-title">PINKI <span>SCHEDULE</span></h1>
+    </div>
+
+    <div class="controls-card">
+        <div class="controls">
+            <div class="ctrl-group">
+                <label for="personSelect">Student</label>
+                <select id="personSelect">
+                    <option value="Hamdi">Hamdi</option>
+                    <option value="Ardit">Ardit</option>
+                    <option value="Sabri">Sabri</option>
+                    <option value="Fejmi">Fejmi</option>
+                </select>
+            </div>
+
+            <div class="ctrl-group">
+                <label>Subjects</label>
+                <div class="ms" id="msSubject">
+                    <button class="ms-btn" type="button"><span class="ms-label">View all</span><span
+                            class="ms-arrow">▾</span></button>
+                    <div class="ms-dropdown" id="msSubjectDrop"></div>
+                </div>
+            </div>
+
+            <div class="ctrl-group">
+                <label>Teachers</label>
+                <div class="ms" id="msTeacher">
+                    <button class="ms-btn" type="button"><span class="ms-label">View all</span><span
+                            class="ms-arrow">▾</span></button>
+                    <div class="ms-dropdown" id="msTeacherDrop"></div>
+                </div>
+            </div>
+
+            <div class="ctrl-group">
+                <label>Classrooms</label>
+                <div class="ms" id="msClassroom">
+                    <button class="ms-btn" type="button"><span class="ms-label">View all</span><span
+                            class="ms-arrow">▾</span></button>
+                    <div class="ms-dropdown" id="msClassroomDrop"></div>
+                </div>
+            </div>
+
+            <div class="ctrl-group">
+                <label>Classes</label>
+                <div class="ms" id="msClass">
+                    <button class="ms-btn" type="button"><span class="ms-label">View all</span><span
+                            class="ms-arrow">▾</span></button>
+                    <div class="ms-dropdown" id="msClassDrop"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-wrap">
+        <div id="main" class="grid"></div>
+    </div>
+
+    <script>
+
+        const TARGETS = {
+            Hamdi: {
+                "Управување со ИКТ проекти": { Color: "#B7B369", "Short name": "IKT" },
+                "Интегрирани системи": { Color: "#C667E5", "Short name": "IS" },
+                "Дизајн на интеракцијата човек-компјутер": { Color: "#D79F62", "Short name": "HID" },
+                "Математика 2 / Дискретна математика": { Color: "#4845CA", "Short name": "DM" },
+                "Психологија на училишна возраст": { Color: "#8DC075", "Short name": "PnUV" },
+            },
+            Ardit: {
+                "Управување со ИКТ проекти": { Color: "#B7B369", "Short name": "IKT" },
+                "Интегрирани системи": { Color: "#C667E5", "Short name": "IS" },
+                "Електронска и мобилна трговија": { Color: "#D79F62", "Short name": "EMT" },
+                "Континуирана интеграција и испорака": { Color: "#8DC075", "Short name": "DevOps" },
+                "Виртуелна реалност": { Color: "#4845CA", "Short name": "VR" },
+                "Мобилни апликации": { Color: "#539DCC", "Short name": "MA" },
+            },
+            Sabri: {
+                "Управување со ИКТ проекти": { Color: "#B7B369", "Short name": "IKT" },
+                "Интегрирани системи": { Color: "#C667E5", "Short name": "IS" },
+                "Дизајн на интеракцијата човек-компјутер": { Color: "#D79F62", "Short name": "HID" },
+                "Психологија на училишна возраст": { Color: "#8DC075", "Short name": "PnUV" },
+                "Дигитални библиотеки": { Color: "#4845CA", "Short name": "DBib" },
+            },
+            Fejmi: {
+                "Вештачка интелигенција": { Color: "#B7B369", "Short name": "AI" },
+                "Интегрирани системи": { Color: "#C667E5", "Short name": "IS" },
+                "Дизајн на интеракцијата човек-компјутер": { Color: "#D79F62", "Short name": "HID" },
+                "Математика 2 / Дискретна математика": { Color: "#4845CA", "Short name": "M2" },
+                "Психологија на училишна возраст": { Color: "#8DC075", "Short name": "PnUV" },
+                "Мултимедиски системи": { Color: "#539DCC", "Short name": "MS" },
+            }
+
+        };
+
+        let selectedPerson = localStorage.getItem("selectedPerson") || "Hamdi";
+        const main = document.getElementById("main");
+        const personSelect = document.getElementById("personSelect");
+        personSelect.value = selectedPerson;
+
+
+        const MS = {
+            subject: { wrap: document.getElementById("msSubject"), drop: document.getElementById("msSubjectDrop") },
+            teacher: { wrap: document.getElementById("msTeacher"), drop: document.getElementById("msTeacherDrop") },
+            classroom: { wrap: document.getElementById("msClassroom"), drop: document.getElementById("msClassroomDrop") },
+            cls: { wrap: document.getElementById("msClass"), drop: document.getElementById("msClassDrop") },
+        };
+
+
+        Object.values(MS).forEach(({ wrap, drop }) => {
+            wrap.querySelector(".ms-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                const isOpen = wrap.classList.contains("open");
+                closeAllDropdowns();
+                if (!isOpen) wrap.classList.add("open");
+            });
+        });
+        document.addEventListener("click", closeAllDropdowns);
+        function closeAllDropdowns() { Object.values(MS).forEach(({ wrap }) => wrap.classList.remove("open")); }
+
+        function getSelected(msKey) {
+            return [...MS[msKey].drop.querySelectorAll("input:checked")].map(cb => cb.value);
+        }
+        function updateLabel(msKey) {
+            const sel = getSelected(msKey);
+            MS[msKey].wrap.querySelector(".ms-label").textContent = sel.length === 0 ? "View all" : `${sel.length} selected`;
+        }
+
+
+        const times = [
+            "8:00 - 8:45",
+            "9:00 - 9:45",
+            "10:00 - 10:45",
+            "11:00 - 11:45",
+            "12:00 - 12:45",
+            "13:00 - 13:45",
+            "14:00 - 14:45",
+            "15:00 - 15:45",
+            "16:00 - 16:45",
+            "17:00 - 17:45",
+            "18:00 - 18:45",
+            "19:00 - 19:45",
+            "20:00 - 20:45",
+        ];
+
+
+
+
+        const startPeriod = 0; // inclusive
+        const endPeriod = 13;  // exclusive
+        const startDayCode = -1;
+        const endDayCode = 5;
+
+        let days = null;
+        let data = null;
+
+
+
+        fetchJson();
+
+
+        personSelect.addEventListener("change", () => {
+            selectedPerson = personSelect.value;
+            localStorage.setItem("selectedPerson", selectedPerson);
+            main.innerHTML = "";
+            fetchJson();
+        });
+
+        async function fetchJson() {
+
+            const response = await fetch("http://localhost:3000/schedule?year=2025");
+            const json = await response.json();
+
+            days = json.days;
+            data = Array.isArray(json.data) ? json.data : [];
+
+
+            data = applyPersonFilter(data);
+
+            populateFilters(data);
+            build();
+        }
+
+
+
+        function subjectBaseAndSuffix(subject) {
+            const s = String(subject || "");
+            const parts = s.split(" (", 2);
+            const base = parts[0].trim();
+            const suffix = parts.length === 2 ? parts[1].replace(")", "").trim() : ""; // "п" / "ав"
+            return { base, suffix };
+        }
+
+        function applyPersonFilter(allItems) {
+            const map = TARGETS[selectedPerson];
+
+            return allItems
+                .filter(item => {
+                    const { base } = subjectBaseAndSuffix(item["Subject"]);
+                    return !!map[base];
+                })
+                .map(item => {
+                    const { base, suffix } = subjectBaseAndSuffix(item["Subject"]);
+                    const conf = map[base];
+
+                    return {
+                        ...item,
+                        "Color": conf.Color,
+                        "Short name": suffix ? `${conf["Short name"]} (${suffix})` : conf["Short name"],
+                    };
+                });
+        }
+
+
+
+        function populateFilters(items) {
+            const unique = (key) => [...new Set(items.map(i => i[key]).filter(Boolean))].sort();
+            function fillDrop(msKey, values) {
+                const drop = MS[msKey].drop;
+
+                const saved = JSON.parse(localStorage.getItem(`filter_${selectedPerson}_${msKey}`) || "null");
+                const prev = saved !== null ? saved : getSelected(msKey);
+                drop.innerHTML = "";
+                values.forEach(v => {
+                    const label = document.createElement("label");
+                    label.className = "ms-item";
+                    const cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.value = v;
+                    cb.checked = prev.includes(v);
+                    cb.addEventListener("change", () => {
+                        updateLabel(msKey);
+
+                        localStorage.setItem(`filter_${selectedPerson}_${msKey}`, JSON.stringify(getSelected(msKey)));
+                        main.innerHTML = ""; build();
+                    });
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(v));
+                    drop.appendChild(label);
+
+                    label.addEventListener("click", e => e.stopPropagation());
+                });
+                updateLabel(msKey);
+            }
+            fillDrop("subject", unique("Short name"));
+            fillDrop("teacher", unique("Teachers"));
+            fillDrop("classroom", unique("Classrooms"));
+            const extraClasses = ["2y-SEIS"];
+            const allClasses = [...new Set([...unique("Classes"), ...extraClasses])].sort();
+            fillDrop("cls", allClasses);
+
+
+            const clsDrop = MS.cls.drop;
+            const engLabel = document.createElement("label");
+            engLabel.className = "ms-item ms-shortcut-item";
+            const engCb = document.createElement("input");
+            engCb.type = "checkbox";
+            engCb.id = "onlyEnglishCb";
+            engCb.checked = onlyEnglish;
+            engCb.addEventListener("change", () => {
+                onlyEnglish = engCb.checked;
+                localStorage.setItem(`onlyEnglish_${selectedPerson}`, JSON.stringify(onlyEnglish));
+                main.innerHTML = "";
+                build();
+            });
+            engLabel.appendChild(engCb);
+            engLabel.appendChild(document.createTextNode("Only English"));
+            engLabel.addEventListener("click", e => e.stopPropagation());
+            clsDrop.insertBefore(engLabel, clsDrop.firstChild);
+
+
+            const divider = document.createElement("div");
+            divider.className = "ms-divider";
+            clsDrop.insertBefore(divider, engLabel.nextSibling);
+        }
+
+        function applyFilters(items) {
+            const sv = getSelected("subject");
+            const tv = getSelected("teacher");
+            const rv = getSelected("classroom");
+            const cv = getSelected("cls");
+            return items.filter(i =>
+                (sv.length === 0 || sv.includes(i["Short name"])) &&
+                (tv.length === 0 || tv.includes(i["Teachers"])) &&
+                (rv.length === 0 || rv.includes(i["Classrooms"])) &&
+                (onlyEnglish
+                    ? (i["Classes"] || "").toUpperCase().includes("SEIS")
+                    : (cv.length === 0 || cv.includes(i["Classes"]))
+                )
+            );
+        }
+
+        let onlyEnglish = JSON.parse(localStorage.getItem(`onlyEnglish_${selectedPerson}`) || "false");
+
+        function itemKey(item) {
+            return `${item["Subject"]}|${item["Teachers"]}|${item["Classrooms"]}|${item["Classes"]}`;
+        }
+
+        const SLOT_H = 90;
+        const CARD_PAD = 6;
+
+        function build() {
+            main.innerHTML = "";
+
+            const orderedDays = Object.entries(days).sort((a, b) => a[1] - b[1]);
+            const numDays = orderedDays.length;
+            const numRows = endPeriod - startPeriod;
+
+            main.style.gridAutoRows = "";
+            main.style.gridTemplateRows = `var(--slot-h) repeat(${numRows}, var(--slot-h))`;
+
+
+            const corner = document.createElement("div");
+            corner.className = "time-item corner";
+            corner.style.gridColumn = "1";
+            corner.style.gridRow = "1";
+            main.appendChild(corner);
+
+
+            orderedDays.forEach(([dayName], idx) => {
+                const h = document.createElement("div");
+                h.className = "item header";
+                h.textContent = dayName;
+                h.style.gridColumn = String(idx + 2);
+                h.style.gridRow = "1";
+                main.appendChild(h);
+            });
+
+            const filtered = applyFilters(data);
+
+
+            for (let p = startPeriod; p < endPeriod; p++) {
+                const gridRow = (p - startPeriod) + 2;
+
+                const timeDiv = document.createElement("div");
+                timeDiv.className = "time-item";
+                timeDiv.textContent = times[p];
+                timeDiv.style.gridColumn = "1";
+                timeDiv.style.gridRow = String(gridRow);
+                main.appendChild(timeDiv);
+
+                for (let d = 0; d < numDays; d++) {
+                    const bg = document.createElement("div");
+                    bg.className = "empty-item";
+                    bg.style.gridColumn = String(d + 2);
+                    bg.style.gridRow = String(gridRow);
+                    bg.style.zIndex = "1";
+                    main.appendChild(bg);
+                }
+            }
+
+
+            orderedDays.forEach(([dayName, dayCode], d) => {
+                const dayItems = filtered.filter(i => i["Day code"] === dayCode);
+                const lessonSpans = computeLessonSpans(dayItems);
+                assignLanes(lessonSpans);
+
+                const overlay = document.createElement("div");
+                overlay.style.gridColumn = String(d + 2);
+                overlay.style.gridRow = `2 / span ${numRows}`;
+                overlay.style.position = "relative";
+                overlay.style.background = "transparent";
+                overlay.style.zIndex = "2";
+                overlay.style.pointerEvents = "none";
+                overlay.style.border = "none";
+                overlay.style.padding = "0";
+                main.appendChild(overlay);
+
+                lessonSpans.forEach(({ item, startP, endP, lane, totalLanes }) => {
+                    const top = (startP - startPeriod) * SLOT_H + CARD_PAD;
+                    const height = (endP - startP + 1) * SLOT_H - CARD_PAD * 2;
+                    const leftStr = `calc(${lane / totalLanes * 100}% + ${CARD_PAD}px)`;
+                    const widthStr = `calc(${100 / totalLanes}% - ${CARD_PAD * 2}px)`;
+
+                    const card = document.createElement("div");
+                    card.classList.add("sub-item");
+                    card.style.position = "absolute";
+                    card.style.top = `${top}px`;
+                    card.style.height = `${height}px`;
+                    card.style.left = leftStr;
+                    card.style.width = widthStr;
+                    card.style.background = item["Color"];
+                    card.style.boxSizing = "border-box";
+                    card.style.pointerEvents = "auto";
+
+                    const roomAndGroup = document.createElement("div");
+                    roomAndGroup.classList.add("top-row");
+
+                    const roomDiv = document.createElement("div");
+                    roomDiv.classList.add("small");
+                    roomDiv.textContent = item["Classrooms"] || "";
+                    roomAndGroup.appendChild(roomDiv);
+
+                    if (item["Classes"] !== undefined) {
+                        const classDiv = document.createElement("div");
+                        classDiv.classList.add("small");
+                        classDiv.textContent = item["Classes"];
+                        roomAndGroup.appendChild(classDiv);
+                    }
+                    card.appendChild(roomAndGroup);
+
+                    const name = document.createElement("h2");
+                    name.classList.add("name");
+                    name.textContent = item["Short name"];
+                    name.style.textAlign = "center";
+                    card.appendChild(name);
+
+                    if (item["Teachers"] !== undefined) {
+                        const prof = document.createElement("div");
+                        prof.classList.add("small");
+                        prof.style.textAlign = "end";
+                        prof.textContent = item["Teachers"];
+                        card.appendChild(prof);
+                    }
+
+                    overlay.appendChild(card);
+                });
+            });
+        }
+
+
+        function computeLessonSpans(dayItems) {
+            const byKey = {};
+            dayItems.forEach(item => {
+                const key = itemKey(item);
+                if (!byKey[key]) byKey[key] = { item, periods: new Set() };
+                item["Periods"].forEach(p => {
+                    if (p >= startPeriod && p < endPeriod) byKey[key].periods.add(p);
+                });
+            });
+
+            const spans = [];
+            Object.values(byKey).forEach(({ item, periods }) => {
+                const sorted = [...periods].sort((a, b) => a - b);
+                let i = 0;
+                while (i < sorted.length) {
+                    let j = i;
+                    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++;
+                    spans.push({ item, startP: sorted[i], endP: sorted[j], lane: 0, totalLanes: 1 });
+                    i = j + 1;
+                }
+            });
+            return spans;
+        }
+
+
+        function assignLanes(spans) {
+            spans.sort((a, b) => a.startP - b.startP || a.endP - b.endP);
+            const laneEnd = [];
+            spans.forEach(span => {
+                let lane = laneEnd.findIndex(e => e < span.startP);
+                if (lane === -1) lane = laneEnd.length;
+                laneEnd[lane] = span.endP;
+                span.lane = lane;
+            });
+
+            spans.forEach(span => {
+                let max = 0;
+                spans.forEach(o => {
+                    if (o.startP <= span.endP && o.endP >= span.startP)
+                        max = Math.max(max, o.lane + 1);
+                });
+                span.totalLanes = max;
+            });
+        }
+
+
+
+
+        function createFields(type, text, align, className = "") {
+            const field = document.createElement(type);
+            field.innerHTML = text;
+            field.style.textAlign = align;
+            if (className) field.classList.add(className);
+            return field;
+        }
+    </script>
+</body>
+
+</html>
