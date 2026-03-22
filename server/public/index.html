@@ -12,7 +12,10 @@
 
 
     <style>
-        body { zoom: 0.7; }
+        body {
+            zoom: 0.7;
+        }
+
         :root {
             --bg: #f0f2f5;
             --surface: #ffffff;
@@ -354,6 +357,68 @@
             color: #fff;
             text-shadow: 0 1px 3px rgba(0, 0, 0, .3);
         }
+
+        /* lab card distinction */
+        .sub-item.is-lab {
+            border: 4px dashed rgba(220, 40, 40, .85) !important;
+        }
+
+        .lab-pill {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .8px;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, .28);
+            color: #fff;
+            border-radius: 4px;
+            padding: 1px 5px;
+            line-height: 1.6;
+            flex-shrink: 0;
+        }
+
+        /* ── Week badge ── */
+        .week-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            border: 2px solid;
+            cursor: pointer;
+            user-select: none;
+            transition: background .2s, color .2s, border-color .2s, transform .1s;
+        }
+
+        .week-badge:hover {
+            transform: translateY(-1px);
+        }
+
+        .week-badge.week-a {
+            background: rgba(45, 45, 142, .12);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .week-badge.week-b {
+            background: rgba(41, 171, 226, .12);
+            color: var(--accent2);
+            border-color: var(--accent2);
+        }
+
+        .week-badge .badge-icon {
+            font-size: 15px;
+        }
+
+        .week-badge .badge-hint {
+            font-size: 10px;
+            font-weight: 500;
+            opacity: .7;
+            margin-left: 4px;
+        }
     </style>
 </head>
 
@@ -410,6 +475,16 @@
                     <div class="ms-dropdown" id="msClassDrop"></div>
                 </div>
             </div>
+
+            <!-- Week badge -->
+            <div class="ctrl-group" style="min-width:unset;margin-left:auto">
+                <label>Lab Week</label>
+                <button id="weekBadge" class="week-badge week-a" title="Click to toggle week manually">
+                    <span class="badge-icon">📅</span>
+                    <span id="weekBadgeLabel">WEEK A</span>
+                    <span class="badge-hint">click to toggle</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -418,6 +493,132 @@
     </div>
 
     <script>
+
+        // ─────────────────────────────────────────────────────────────────
+        // LABS CONFIG  –  put here all labs that alternate week by week.
+        // Each person has "A" (labs shown on ODD ISO weeks)
+        // and             "B" (labs shown on EVEN ISO weeks).
+        //
+        // Each lab entry:
+        //   day       : 0=Mon 1=Tue 2=Wed 3=Thu 4=Fri
+        //   period    : 0-based period index (0 = 8:00-8:45, etc.)
+        //   subject   : full subject name (must match the key in TARGETS)
+        //   shortName : display label shown on the card
+        //   color     : card background color (hex)
+        //   classroom : classroom string
+        //   teacher   : teacher string (can be "")
+        // ─────────────────────────────────────────────────────────────────
+        const LABS = {
+            Hamdi: {
+                A: [
+                    { day: 2, period: 4, subject: "Дизајн на интеракцијата човек-компјутер", shortName: "HID (Lab)", color: "#D79F62", classroom: "LAB 138", teacher: "" }
+                ],
+                B: [
+                    { day: 0, period: 7, subject: "Управување со ИКТ проекти", shortName: "IKT (Lab)", color: "#B7B369", classroom: "LAB 13", teacher: "" },
+                    { day: 2, period: 0, subject: "Интегрирани системи", shortName: "IS (Lab)", color: "#C667E5", classroom: "LAB 13", teacher: "" }
+                ]
+            },
+            Ardit: {
+                A: [
+                    { day: 0, period: 1, subject: "Електронска и мобилна трговија", shortName: "EMT (Lab)", color: "#D79F62", classroom: "LAB 13", teacher: "" }
+                ],
+                B: [
+                    { day: 0, period: 7, subject: "Управување со ИКТ проекти", shortName: "IKT (Lab)", color: "#B7B369", classroom: "LAB 13", teacher: "" },
+                    { day: 2, period: 0, subject: "Интегрирани системи", shortName: "IS (Lab)", color: "#C667E5", classroom: "LAB 13", teacher: "" }
+                ]
+            },
+            Sabri: {
+                A: [
+                    { day: 2, period: 4, subject: "Дизајн на интеракцијата човек-компјутер", shortName: "HID (Lab)", color: "#D79F62", classroom: "LAB 138", teacher: "" }
+                ],
+                B: [
+                    { day: 0, period: 7, subject: "Управување со ИКТ проекти", shortName: "IKT (Lab)", color: "#B7B369", classroom: "LAB 13", teacher: "" },
+                    { day: 2, period: 0, subject: "Интегрирани системи", shortName: "IS (Lab)", color: "#C667E5", classroom: "LAB 13", teacher: "" }
+                ]
+            },
+            Fejmi: {
+                A: [
+                    { day: 2, period: 4, subject: "Дизајн на интеракцијата човек-компјутер", shortName: "HID (Lab)", color: "#D79F62", classroom: "LAB 138", teacher: "" }
+                ],
+                B: [
+                    { day: 2, period: 0, subject: "Интегрирани системи", shortName: "IS (Lab)", color: "#C667E5", classroom: "LAB 13", teacher: "" }
+                ]
+            }
+        };
+
+        // ─────────────────────────────────────────────────────────────────
+        // WEEK DETECTION
+        // Odd ISO week number  → "A",  Even ISO week number → "B"
+        // You can flip this by changing weekAIsOdd to false.
+        // ─────────────────────────────────────────────────────────────────
+        const weekAIsOdd = true;
+
+        function getISOWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function autoWeekKey() {
+            const now = new Date();
+            const day = now.getDay(); // 0=Sun, 6=Sat
+            // On Saturday or Sunday, already show next week's labs
+            const ref = new Date(now);
+            if (day === 6) ref.setDate(now.getDate() + 2); // Sat → next Mon
+            if (day === 0) ref.setDate(now.getDate() + 1); // Sun → next Mon
+            const isoWeek = getISOWeekNumber(ref);
+            const isOdd = isoWeek % 2 === 1;
+            return (isOdd === weekAIsOdd) ? "A" : "B";
+        }
+
+        // Allow manual toggle (persisted in localStorage)
+        let currentWeekKey = localStorage.getItem("weekKey") || autoWeekKey();
+
+        const weekBadge = document.getElementById("weekBadge");
+        const weekBadgeLabel = document.getElementById("weekBadgeLabel");
+
+        function updateWeekBadge() {
+            weekBadgeLabel.textContent = "WEEK " + currentWeekKey;
+            weekBadge.classList.toggle("week-a", currentWeekKey === "A");
+            weekBadge.classList.toggle("week-b", currentWeekKey === "B");
+        }
+        updateWeekBadge();
+
+        weekBadge.addEventListener("click", () => {
+            currentWeekKey = currentWeekKey === "A" ? "B" : "A";
+            localStorage.setItem("weekKey", currentWeekKey);
+            updateWeekBadge();
+            main.innerHTML = "";
+            build();
+        });
+
+        // Auto-reset to auto-detected week each new calendar day
+        (function checkDayChange() {
+            const todayKey = new Date().toDateString();
+            const lastDay = localStorage.getItem("weekKeyDay");
+            if (lastDay !== todayKey) {
+                currentWeekKey = autoWeekKey();
+                localStorage.setItem("weekKey", currentWeekKey);
+                localStorage.setItem("weekKeyDay", todayKey);
+                updateWeekBadge();
+            }
+        })();
+
+        function getLabsForCurrentWeek() {
+            const personLabs = (LABS[selectedPerson] || { A: [], B: [] })[currentWeekKey] || [];
+            return personLabs.map(lab => ({
+                "Day code": lab.day,
+                "Periods": [lab.period],
+                "Subject": lab.subject,
+                "Short name": lab.shortName,
+                "Color": lab.color,
+                "Classrooms": lab.classroom || "",
+                "Teachers": lab.teacher || undefined,
+                "Classes": undefined,
+                _isLab: true
+            }));
+        }
 
         const TARGETS = {
             Hamdi: {
@@ -433,7 +634,7 @@
                 "Електронска и мобилна трговија": { Color: "#D79F62", "Short name": "EMT" },
                 "Континуирана интеграција и испорака": { Color: "#8DC075", "Short name": "DevOps" },
                 "Виртуелна реалност": { Color: "#4845CA", "Short name": "VR" },
-                "Мобилни апликации": { Color: "#539DCC", "Short name": "MA" },
+                "Сервисно ориентирани архитектури": { Color: "#539DCC", "Short name": "COA" },
             },
             Sabri: {
                 "Управување со ИКТ проекти": { Color: "#B7B369", "Short name": "IKT" },
@@ -541,6 +742,10 @@
             build();
         }
 
+        function dataWithLabs() {
+            return [...data, ...getLabsForCurrentWeek()];
+        }
+
 
 
         function subjectBaseAndSuffix(subject) {
@@ -634,20 +839,45 @@
             clsDrop.insertBefore(divider, engLabel.nextSibling);
         }
 
+        // Subjects listed here are restricted to classes containing the given
+        // substring(s) when in "view all" mode (no class filter active).
+        // Value can be a single string OR an array of strings (match any).
+        const RESTRICT_TO_CLASSES = {
+            "IKT": "SEIS",
+            "IS": "SEIS",
+            "EMT": ["SEIS", "КИ/Oст"],
+        };
+
         function applyFilters(items) {
             const sv = getSelected("subject");
             const tv = getSelected("teacher");
             const rv = getSelected("classroom");
             const cv = getSelected("cls");
-            return items.filter(i =>
-                (sv.length === 0 || sv.includes(i["Short name"])) &&
-                (tv.length === 0 || tv.includes(i["Teachers"])) &&
-                (rv.length === 0 || rv.includes(i["Classrooms"])) &&
-                (onlyEnglish
-                    ? (i["Classes"] || "").toUpperCase().includes("SEIS")
-                    : (cv.length === 0 || cv.includes(i["Classes"]))
-                )
-            );
+            return items.filter(i => {
+                // Lab entries always pass class/classroom/teacher filters
+                // (they don't belong to an Edupage class group)
+                if (i._isLab) return sv.length === 0 || sv.includes(i["Short name"]);
+
+                // Check if this subject is restricted to a class group in view-all
+                const baseName = i["Short name"]?.split(" (")[0];
+                const restriction = RESTRICT_TO_CLASSES[baseName];
+                if (restriction && cv.length === 0 && !onlyEnglish) {
+                    const terms = Array.isArray(restriction) ? restriction : [restriction];
+                    const cls = (i["Classes"] || "").toUpperCase();
+                    if (!terms.some(t => cls.includes(t.toUpperCase())))
+                        return false;
+                }
+
+                return (
+                    (sv.length === 0 || sv.includes(i["Short name"])) &&
+                    (tv.length === 0 || tv.includes(i["Teachers"])) &&
+                    (rv.length === 0 || rv.includes(i["Classrooms"])) &&
+                    (onlyEnglish
+                        ? (i["Classes"] || "").toUpperCase().includes("SEIS")
+                        : (cv.length === 0 || cv.includes(i["Classes"]))
+                    )
+                );
+            });
         }
 
         let onlyEnglish = JSON.parse(localStorage.getItem(`onlyEnglish_${selectedPerson}`) || "false");
@@ -686,7 +916,7 @@
                 main.appendChild(h);
             });
 
-            const filtered = applyFilters(data);
+            const filtered = applyFilters(dataWithLabs());
 
 
             for (let p = startPeriod; p < endPeriod; p++) {
@@ -742,6 +972,7 @@
                     card.style.background = item["Color"];
                     card.style.boxSizing = "border-box";
                     card.style.pointerEvents = "auto";
+                    if (item._isLab) card.classList.add("is-lab");
 
                     const roomAndGroup = document.createElement("div");
                     roomAndGroup.classList.add("top-row");
@@ -750,6 +981,13 @@
                     roomDiv.classList.add("small");
                     roomDiv.textContent = item["Classrooms"] || "";
                     roomAndGroup.appendChild(roomDiv);
+
+                    if (item._isLab) {
+                        const pill = document.createElement("span");
+                        pill.className = "lab-pill";
+                        pill.textContent = "lab";
+                        roomAndGroup.appendChild(pill);
+                    }
 
                     if (item["Classes"] !== undefined) {
                         const classDiv = document.createElement("div");
