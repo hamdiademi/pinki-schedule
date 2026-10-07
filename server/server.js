@@ -75,7 +75,7 @@ function classMatches(classText) {
 
 
 
-async function fetchTTViewerData(year = 2025) {
+async function fetchTTViewerData(year = 2026) {
     // get session cookie
     await client.get("https://finki.edupage.org/timetable/");
 
@@ -228,7 +228,7 @@ app.get("/", (req, res) => {
 
 app.get("/schedule", async (req, res) => {
     try {
-        const year = Number(req.query.year ?? 2025);
+        const year = Number(req.query.year ?? 2026);
 
 
         const viewer = await fetchTTViewerData(year);
@@ -254,7 +254,7 @@ app.get("/schedule", async (req, res) => {
 
 // Debug endpoints (helpful)
 app.get("/debug/ttviewer", async (req, res) => {
-    const year = Number(req.query.year ?? 2025);
+    const year = Number(req.query.year ?? 2026);
     res.json(await fetchTTViewerData(year));
 });
 
